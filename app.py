@@ -40,7 +40,13 @@ ARBEIDSPLASSEN_URL_REGEX = re.compile("https://arbeidsplassen.nav.no/stillinger/
 
 @app.get("/")
 async def render_index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "index.jinja")
+    return templates.TemplateResponse(
+        request,
+        "index.jinja",
+        context={
+            "active_href": "/"
+        }
+    )
 
 @app.get("/applications")
 async def render_applications(
@@ -99,7 +105,7 @@ async def render_applications(
         request,
         "applications/list.jinja",
         context={
-            "active_href": "/",
+            "active_href": "/applications",
             "applications": applications
         }
     )
