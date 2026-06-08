@@ -1,0 +1,68 @@
+{% extends "skeleton.jinja" %}
+{% block headext %}
+	<link rel="stylesheet" href="/static/styles/applications/create.css">
+	<script type="module" defer async>
+		document.getElementById("create-company-button").addEventListener("click", async () => {
+			const companyIdInput = document.getElementById("company-id");
+			// Here we are reusing the id field for text input aswell. Not great UX, but oh whelp.
+			// Another problem for another day.
+			const companyName = companyIdInput.value;
+			const response = await fetch(`/companies?name=${encodeURIComponent(companyName)}`, {
+				method: "POST",
+				headers: {
+					"Accept": "application/json"
+				}
+			});
+			const data = await response.json();
+			companyIdInput.value = data.id;
+		});
+	</script>
+{% endblock %}
+
+{% block title %}Create application | Blorptopia ATS{% endblock %}
+
+
+{% block content %}
+	<h1>Create application</h1>
+	<form method="post" action="/applications">
+		<h2>Source</h2>
+		<section>
+			<div class="field">
+				<label for="finn-ad-id">Finn AD ID</label>
+				<input id="finn-ad-id" name="finn_ad_id" value="{{ finn_ad_id or "" }}">
+			</div>
+			<div class="field">
+				<label for="arbeidsplassen-post-id">Arbeidsplassen post ID</label>
+				<input id="arbeidsplassen-post-id" name="arbeidsplassen_post_id" value="{{ arbeidsplassen_post_id or "" }}">
+			</div>
+			<div class="field">
+				<label for="application-platform-url">Application platform URL</label>
+				<input id="application-platform-url" name="application_platform_url" value="{{ application_platform_url or "" }}">
+			</div>
+			<div class="field">
+				<label for="referred-by-application">Referred by application ID</label>
+				<select id="referred-by-application" name="referred_by_application">
+					<option value="" selected>None</option>
+					{% for application in applications %}
+						<option value="{{ application.id }}">{{ application.company_name }} - {{ application.applied_at or "No tracked date" }}</option>
+					{% endfor %}
+				</select>
+			</div>
+		</section>
+		<h2>Metadata</h2>
+		<section>
+			<div class="field">
+				<label for="company-id">Company ID</label>
+				<input id="company-id" name="company-id" list="companies">
+				<datalist id="companies">
+					{% for company in companies %}
+						<option value="{{ company.id }}">{{ company.name }}</option>
+					{% endfor %}
+				</datalist>
+				<button id="create-company-button" type="button">Create</button>
+			</div>
+		</section>
+
+		<button class="primary" type="submit">Create</button>
+	</form>
+{% endblock %}

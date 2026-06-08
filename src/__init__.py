@@ -1,7 +1,8 @@
 import typing
 import asyncpg
-from fastapi import Depends, FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import Depends, FastAPI, Form, Header, Request
+from fastapi.exceptions import HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -11,6 +12,7 @@ from jinja2.ext import DebugExtension
 from pydantic import BaseModel
 import re
 from uuid import UUID
+from .accept import get_preferred_mimetype
 
 class ConfigSchema(BaseModel):
     database_url: str
@@ -127,6 +129,44 @@ async def update_application(
         application_id
     )
     return RedirectResponse(f"/applications/{application_id}", status_code=302)
+
+async def render_create_application_page(
+    request,
+    finn_ad_id: int | None,
+    arbeidsplassen_post_id: UUID | None,
+    application_platform_url: str | None,
+    pool: asyncpg.Pool
+) -> HTMLResponse:
+    applications = await pool.fetch(
+        """
+            select
+                applications.id,
+                applied_at,
+                companies.name as company_name
+            from applications
+            left join companies on companies.id = applications.company_id
+        """
+    )
+    companies = await pool.fetch(
+        """
+            select
+                id,
+                name
+            from companies
+        """
+    )
+    return templates.TemplateResponse(
+        request,
+        "applications/create.jinja",
+        context={
+            "finn_ad_id": finn_ad_id,
+            "arbeidsplassen_post_id": arbeidsplassen_post_id,
+            "application_platform_url": application_platform_url,
+            "applications": applications,
+            "companies": companies
+        }
+    )
+
 @app.get("/applications/find", response_model=None)
 async def find_application_by_id_or_url(
     id_or_url: str,
@@ -148,15 +188,9 @@ async def find_application_by_id_or_url(
         if application is not None:
             return RedirectResponse(f"/applications/{application["id"]}")
         else:
-            return templates.TemplateResponse(
-                request,
-                "applications/create.jinja",
-                context={
-                    "finn_ad_id": finn_ad_id
-                }
-            )
+            return await render_create_application_page(request, finn_ad_id, None, None, pool)
     if (parsed := ARBEIDSPLASSEN_URL_REGEX.search(id_or_url)) is not None:
-        arbeidsplassen_post_id = parsed.group(1)
+        arbeidsplassen_post_id = UUID(parsed.group(1))
         application = await pool.fetchrow(
             """
                 select
@@ -170,13 +204,7 @@ async def find_application_by_id_or_url(
         if application is not None:
             return RedirectResponse(f"/applications/{application["id"]}")
         else:
-            return templates.TemplateResponse(
-                request,
-                "applications/create.jinja",
-                context={
-                    "arbeidsplassen_post_id": arbeidsplassen_post_id
-                }
-            )
+            return await render_create_application_page(request, None, arbeidsplassen_post_id, None, pool)
     try:
         finn_ad_id = int(id_or_url)
     except ValueError:
@@ -195,18 +223,12 @@ async def find_application_by_id_or_url(
         if application is not None:
             return RedirectResponse(f"/applications/{application["id"]}")
         else:
-            return templates.TemplateResponse(
-                request,
-                "applications/create.jinja",
-                context={
-                    "finn_ad_id": finn_ad_id
-                }
-            )
+            return await render_create_application_page(request, finn_ad_id, None, None, pool)
     try:
         arbeidsplassen_post_id = UUID(id_or_url)
     except ValueError:
         arbeidsplassen_post_id = None
-    if finn_ad_id is not None:
+    if arbeidsplassen_post_id is not None:
         application = await pool.fetchrow(
             """
                 select
@@ -220,14 +242,7 @@ async def find_application_by_id_or_url(
         if application is not None:
             return RedirectResponse(f"/applications/{application["id"]}")
         else:
-            return templates.TemplateResponse(
-                request,
-                "applications/create.jinja",
-                context={
-                    "arbeidsplassen_post_id": arbeidsplassen_post_id
-                }
-            )
-
+            return await render_create_application_page(request, None, arbeidsplassen_post_id, None, pool)
     application = await pool.fetchrow(
         """
             select
@@ -241,18 +256,12 @@ async def find_application_by_id_or_url(
     if application is not None:
         return RedirectResponse(f"/applications/{application["id"]}")
     else:
-        return templates.TemplateResponse(
-            request,
-            "applications/create.jinja",
-            context={
-                "application_platform_url": arbeidsplassen_post_id
-            }
-        )
+        return await render_create_application_page(request, None, None, id_or_url, pool)
 @app.get("/applications/{application_id}")
 async def render_application(
-        application_id: int,
-        request: Request,
-        pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)]
+    application_id: int,
+    request: Request,
+    pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)]
 ) -> HTMLResponse:
     application = await pool.fetchrow(
         """
@@ -271,6 +280,8 @@ async def render_application(
         """,
         application_id
     )
+    if application is None:
+        raise HTTPException(404, "application not found")
     interviews = await pool.fetch(
         """
         select
@@ -292,13 +303,43 @@ async def render_application(
             "get_hostname": get_hostname
         }
     )
+@app.post("/applications", response_model=None)
+async def create_application(
+    pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)],
+    accept: typing.Annotated[str, Header()] = "text/html",
+    company_id: typing.Annotated[int | None, Form()] = None,
+    finn_ad_id: typing.Annotated[int | None, Form()] = None,
+    application_platform_url: typing.Annotated[str | None, Form()] = None,
+    arbeidsplassen_post_id: typing.Annotated[UUID | None, Form()] = None,
+    recommended_after_application_id: typing.Annotated[UUID | None, Form()] = None,
+) -> JSONResponse | RedirectResponse:
+    application = await pool.fetchrow(
+        """
+        insert into applications (company_id, finn_ad_id, arbeidsplassen_post_id, application_platform_url, recommended_after_application_id)
+        values ($1, $2, $3, $4, $5)
+        returning id
+        """,
+        company_id,
+        finn_ad_id,
+        arbeidsplassen_post_id,
+        application_platform_url,
+        recommended_after_application_id
+    )
+    preferred_mimetype = get_preferred_mimetype(accept, ["text/html", "application/json"])
+    if preferred_mimetype == "application/json":
+        return JSONResponse({"id": application["id"]})
+    return RedirectResponse(f"/applications/{application["id"]}", status_code=302)
+    
 
 def get_hostname(url: str) -> str:
     split = urlsplit(url)
     return split.hostname or "unknown"
 
 @app.get("/companies")
-async def render_companies(request: Request, pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)]) -> HTMLResponse:
+async def render_companies(
+    request: Request,
+    pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)]
+) -> HTMLResponse:
     companies = await pool.fetch(
         """
         select
@@ -321,3 +362,22 @@ async def render_companies(request: Request, pool: typing.Annotated[asyncpg.Pool
             "active_href": "/companies"
         }
     )
+@app.post("/companies", response_model=None)
+async def create_company(
+    name: str,
+    pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)],
+    accept: typing.Annotated[str, Header()] = "text/html"
+) -> JSONResponse | RedirectResponse:
+    result = await pool.fetchrow(
+        """
+        insert into companies
+        (name)
+        values ($1)
+        returning id
+        """,
+        name
+    )
+    preferred_mimetype = get_preferred_mimetype(accept, ["text/html", "application/json"])
+    if preferred_mimetype == "application/json":
+        return JSONResponse({"id": result["id"]})
+    return RedirectResponse(f"/applications?company_id={result["id"]}")
