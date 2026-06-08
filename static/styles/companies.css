@@ -1,0 +1,22 @@
+#companies {
+	display: flex;
+	flex-direction: column;
+	gap: .5rem;
+}
+.company {
+	text-decoration: none;
+	color: inherit;
+
+	padding: 1rem;
+	background: var(--light-background-color);
+
+	display: flex;
+	justify-content: space-between;
+
+	.name {
+		font-weight: bold;
+	}
+	.application-count > .count {
+		font-variant-numeric: tabular-nums;
+	}
+}

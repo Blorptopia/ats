@@ -1,0 +1,21 @@
+h2,h3,p {
+	--margin: .25rem;
+	margin-top: var(--margin);
+	margin-bottom: var(--margin);
+}
+#interviews {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+.interview {
+	display: flex;
+	flex-direction: column;
+	padding: 1rem;
+	background: var(--light-background-color);
+
+	.actions {
+		display: flex;
+		gap: .5rem;
+	}
+}

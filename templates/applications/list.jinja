@@ -1,0 +1,40 @@
+{% extends "skeleton.jinja" %}
+{% block headext %}
+	<link rel="stylesheet" href="/static/styles/applications.css">
+{% endblock %}
+{% block title %}Applications | Blorptopia ATS{% endblock %}
+
+{% macro application_status(status) %}
+	<span class="application-status" data-status="{{ status }}">
+		{{ status | title }}
+	</span>
+{% endmacro %}
+
+{% block content %}
+	<h1>Applications</h1>
+	<form id="find-application" method="get" action="/applications/find">
+		<h2>Find application</h2>
+		<label for="find-application-url">Job board ID / URL</label>
+		<div>
+			<input id="find-application-url" name="id_or_url" type="text" placeholder="452347792">
+			<button type="submit">Find</button>
+		</div>
+	</form>
+	<div id="applications">
+		{% for application in applications %}
+			<a class="application" href="/applications/{{ application.id }}">
+				{% if application.status == "pending" %}
+					{% if application.interview_count != 0 %}
+						{{ application_status("interviewing") }}
+					{% else %}
+						{{ application_status("pending") }}
+					{% endif %}
+				{% else %}
+					{{ application_status(application.status) }}
+				{% endif %}
+				<span class="company-name">{{ application.company_name or "Unknown company" }}</span>
+				<span class="applied-at">{{ application.applied_at or "Not tracked" }}</span>
+			</a>
+		{% endfor %}
+	</div>
+{% endblock %}

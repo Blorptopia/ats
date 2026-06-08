@@ -1,0 +1,61 @@
+{% extends "skeleton.jinja" %}
+{% block headext %}
+	<link rel="stylesheet" href="/static/styles/application.css">
+{% endblock %}
+
+{% block title %}Applications | Blorptopia ATS{% endblock %}
+{% macro application_status(status) %}
+	{% if status != application.status %}
+		<option value="{{status}}">{{ status | title }}</option>
+	{% else %}
+		<option value="{{status}}" selected>{{ status | title }}</option>
+	{% endif %}
+{% endmacro %}
+
+{% block content %}
+	<h1>Application to {{ application.company_name }}</h1>
+	<form method="post">
+		<select name="status" required>
+			{{ application_status("pending") }}
+			{{ application_status("rejected") }}
+			{{ application_status("offer") }}
+		</select>
+		<button type="submit">Update</button>
+	</form>
+	<h2>Job boards</h2>
+	<dl>
+		{% if application.finn_ad_id != None %}
+			<dt>Finn</dt>
+			<dd><a href="https://finn.no/job/ad/{{ application.finn_ad_id }}">{{ application.finn_ad_id }}</a></dd>
+		{% endif %}
+		{% if application.arbeidsplassen_post_id != None %}
+			<dt>Arbeidsplassen</dt>
+			<dd><a href="https://arbeidsplassen.nav.no/stillinger/stilling/{{ application.arbeidsplassen_post_id }}">{{ application.arbeidsplassen_post_id }}</a></dd>
+		{% endif %}
+		{% if application.application_platform_url != None %}
+			<dt>Custom</dt>
+			<dd><a href="{{ application.application_platform_url }}">{{ get_hostname(application.application_platform_url) }}</a></dd>
+		{% endif %}
+	</dl>
+	<h2>Interviews</h2>
+	<div id="interviews">
+		{% for interview in interviews %}
+			<div class="interview">
+				<h3 class="date">{{ interview.date }}</h3>
+				<p class="note">{{ interview.note or "No note"}}</p>
+				<div class="actions">
+					<a href="/interviews/{{ interview.id }}/edit">Edit</a>
+					<form method="post" action="/interviews/{{ interview.id }}/delete">
+						<button type="submit">Delete</button>	
+					</form>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+	<h3>Add new</h3>
+	<form method="post" action="/applications/{{ application.id }}/interviews">
+		<label for="input-interview-date">Date</label>
+		<input type="date" required>
+		<button type="submit">Create</button>
+	</form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "skeleton.jinja" %}
+{% block title %}Companies | Blorp ATS{% endblock %}
+{% block headext %}
+	<link rel="stylesheet" href="/static/styles/companies.css">
+{% endblock %}
+{% block content %}
+	<h1>Companies</h1>
+	<div id="companies">
+		{% for company in companies %}
+			<a class="company" href="/applications?company_id={{ company.id }}">
+				<span class="name">{{ company.name }}</span>
+				<span class="application-count"><span class="counter">{{ company.application_count }}</span> applications</span>
+			</a>
+		{% endfor %}
+	</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Color+Emoji&display=swap');
+:root {
+	color-scheme: dark;
+
+	--background-color: oklch(0.25 0.0405 316.04);
+	--light-background-color: oklch(0.15 0.0405 316.04);
+	--accent-color: oklch(0.3607 0.1294 18.64);
+	--light-accent-color: oklch(0.3 0.1294 18.64);
+
+	font-family: 'Atkinson Hyperlegible';
+	font-size: 1.1rem;
+}
+
+body {
+	display: grid;
+	grid-template-columns: 2fr 9fr;
+	gap: 1rem;
+	min-height: 100vh;
+	margin: 0;
+	background: var(--background-color);
+}
+nav {
+	background: var(--accent-color);
+
+	display: flex;
+	flex-direction: column;
+	gap: .5rem;
+	
+	h1 {
+		margin: 0;
+		text-align: center;
+	}
+	a {
+		padding: 1rem;
+		background: var(--light-accent-color);
+
+		text-decoration: none;
+		font-size: 1.2rem;
+		color: inherit;
+		
+		&[data-active] {
+			font-weight: 600;
+		}
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+}
+#page-content {
+	margin: 1rem;
+}

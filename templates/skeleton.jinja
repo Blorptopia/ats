@@ -1,0 +1,26 @@
+{% macro nav_link(name, href) %}
+	{% if href == active_href %}
+		<a href="{{href}}" data-active>{{name}}</a>
+	{% else %}
+		<a href="{{href}}">{{name}}</a>
+	{% endif %}
+{% endmacro %}
+<!doctype html>
+<head>
+	<title>{% block title %}Blorptopia ATS{% endblock %}</title>
+	<link rel="stylesheet" href="/static/styles/global.css">
+	{% block headext %}{% endblock %}
+</head>
+<body>
+	<nav>
+		<h1>Blorptopia ATS</h1>
+		{{ nav_link("Applications", "/applications") }}
+		{{ nav_link("Companies", "/companies") }}
+	</nav>
+	<div id="page-content">
+		{% block content %}
+			<h1>No content</h1>
+			<p>Define the <code>content</code> block to show something here</p>
+		{% endblock %}
+	</div>
+</body>
