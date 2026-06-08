@@ -7,6 +7,7 @@
 // @match       https://arbeidsplassen.nav.no/*
 // @grant       GM_registerMenuCommand
 // @grant       GM_getValue
+// @grant       GM_openInTab
 //
 // @author      -
 // @description
@@ -18,6 +19,5 @@ GM_registerMenuCommand("Open in ATS", () => {
   const url = new URL(ATS_BASE_URL);
   url.pathname = "/applications/find";
   url.searchParams.set("id_or_url", location.href);
-  location.href = url.toString();
+  GM_openInTab(url.toString(), {active: true});
 });
-
