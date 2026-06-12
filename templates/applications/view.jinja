@@ -40,16 +40,16 @@
 	<h2>Interviews</h2>
 	<div id="interviews">
 		{% for interview in interviews %}
-			<div class="interview">
+			<form class="interview" method="post" action="/interviews/{{ interview.id }}/edit">
 				<h3 class="date">{{ interview.date }}</h3>
-				<p class="note">{{ interview.note or "No note"}}</p>
+				<textarea name="note" value="{{ interview.note }}">{{ interview.note or "No note"}}</textarea>
 				<div class="actions">
-					<a href="/interviews/{{ interview.id }}/edit">Edit</a>
+					<button type="submit">Edit</button>
 					<form method="post" action="/interviews/{{ interview.id }}/delete">
 						<button type="submit">Delete</button>	
 					</form>
 				</div>
-			</div>
+			</form>
 		{% endfor %}
 	</div>
 	<h3>Add new</h3>

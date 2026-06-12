@@ -287,7 +287,8 @@ async def render_application(
         """
         select
             id,
-            date
+            date,
+            note
         from interviews
         where
             application_id = $1
@@ -362,6 +363,25 @@ async def delete_interview(
             id = $1
         returning application_id
         """,
+        interview_id
+    )
+    return RedirectResponse(f"/applications/{interview["application_id"]}", status_code=302)
+@app.post("/interviews/{interview_id}/edit", response_model=None)
+async def edit_interview(
+    interview_id: int,
+    note: typing.Annotated[str, Form()],
+    pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)],
+) -> JSONResponse | RedirectResponse:
+    interview = await pool.fetchrow(
+        """
+        update interviews
+        set
+            note = $1
+        where
+            id = $2
+        returning application_id
+        """,
+        note,
         interview_id
     )
     return RedirectResponse(f"/applications/{interview["application_id"]}", status_code=302)
