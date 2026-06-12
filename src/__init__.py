@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import re
 from uuid import UUID
 from .accept import get_preferred_mimetype
+from datetime import date
 
 class ConfigSchema(BaseModel):
     database_url: str
@@ -329,6 +330,41 @@ async def create_application(
     if preferred_mimetype == "application/json":
         return JSONResponse({"id": application["id"]})
     return RedirectResponse(f"/applications/{application["id"]}", status_code=302)
+
+@app.post("/applications/{application_id}/interviews", response_model=None)
+async def create_interview(
+    application_id: int,
+    date: typing.Annotated[date, Form()],
+    pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)],
+    accept: typing.Annotated[str, Header()] = "text/html",
+) -> JSONResponse | RedirectResponse:
+    interview = await pool.fetchrow(
+        """
+        insert into interviews (application_id, date)
+        values ($1, $2)
+        """,
+        application_id,
+        date
+    )
+    preferred_mimetype = get_preferred_mimetype(accept, ["text/html", "application/json"])
+    if preferred_mimetype == "application/json":
+        return JSONResponse({"id": interview["id"]})
+    return RedirectResponse(f"/applications/{application_id}", status_code=302)
+@app.post("/interviews/{interview_id}/delete", response_model=None)
+async def delete_interview(
+    interview_id: int,
+    pool: typing.Annotated[asyncpg.Pool, Depends(get_db_pool)],
+) -> JSONResponse | RedirectResponse:
+    interview = await pool.fetchrow(
+        """
+        delete from interviews
+        where
+            id = $1
+        returning application_id
+        """,
+        interview_id
+    )
+    return RedirectResponse(f"/applications/{interview["application_id"]}", status_code=302)
     
 
 def get_hostname(url: str) -> str:

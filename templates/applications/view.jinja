@@ -55,7 +55,7 @@
 	<h3>Add new</h3>
 	<form method="post" action="/applications/{{ application.id }}/interviews">
 		<label for="input-interview-date">Date</label>
-		<input type="date" required>
+		<input id="input-interview-date" name="date" type="date" required>
 		<button type="submit">Create</button>
 	</form>
 {% endblock %}
