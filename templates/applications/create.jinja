@@ -53,7 +53,7 @@
 		<section>
 			<div class="field">
 				<label for="company-id">Company ID</label>
-				<input id="company-id" name="company-id" list="companies">
+				<input id="company-id" name="company_id" list="companies">
 				<datalist id="companies">
 					{% for company in companies %}
 						<option value="{{ company.id }}">{{ company.name }}</option>
