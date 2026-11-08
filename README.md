@@ -8,3 +8,17 @@ As such, this does not support multi tenacy nor authentication nor does it plan 
 ## Screenshots
 <img src="docs/images/applications.png" alt="A list of applications showing the status of the application, the name of the company and when you applied to it.">
 <img src="docs/images/companies.png" alt="A list of companies showing the name of the company, and how many times you have applied to each company.">
+
+## Running locally
+If you use poetry:
+```py
+poetry install
+cargo sqlx mig run
+poetry run uvicorn src:app
+```
+If you use uv:
+```py
+uv sync
+cargo sqlx mig run
+uv run uvicorn src:app
+```
